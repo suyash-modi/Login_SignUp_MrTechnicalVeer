@@ -1,32 +1,63 @@
 package com.droid.loginsignup
 
-import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import com.google.firebase.auth.FirebaseAuth
+import androidx.fragment.app.Fragment
+import com.droid.loginsignup.fragments.HomeFragment
+import com.droid.loginsignup.fragments.AIFragment
+import com.droid.loginsignup.fragments.CategoryFragment
+import com.google.android.material.bottomappbar.BottomAppBar
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 class DashboardActivity : AppCompatActivity() {
-
-    private lateinit var auth: FirebaseAuth
+    private var activeFragment: Fragment? = null
+    private val homeFragment = HomeFragment()
+    private val categoryFragment = CategoryFragment()
+    private val aiFragment = AIFragment()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_dashboard)
 
-        auth = FirebaseAuth.getInstance()
+        val bottomNavigationView: BottomNavigationView = findViewById(R.id.bottomNavigation)
+        val floatingActionButton: FloatingActionButton = findViewById(R.id.fabBtn)
 
-        val emailText = findViewById<TextView>(R.id.userEmail)
-        val logoutButton = findViewById<Button>(R.id.logoutButton)
+        // Add all fragments once and hide them except HomeFragment
+        if (savedInstanceState == null) {
+            supportFragmentManager.beginTransaction()
+                .add(R.id.fragment_container, homeFragment, "HomeFragment")
+                .add(R.id.fragment_container, categoryFragment, "CategoryFragment").hide(categoryFragment)
+                .add(R.id.fragment_container, aiFragment, "AIFragment").hide(aiFragment)
+                .commit()
+            activeFragment = homeFragment
+        } else {
+            // Restore active fragment after configuration change
+            activeFragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
+        }
 
-        val currentUser = auth.currentUser
-        emailText.text = "Welcome, ${currentUser?.email}"
+        bottomNavigationView.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.home_fragment -> switchFragment(homeFragment)
+                R.id.categories_fragment -> switchFragment(categoryFragment)
+            }
+            true
+        }
 
-        logoutButton.setOnClickListener {
-            auth.signOut()
-            startActivity(Intent(this, LoginActivity::class.java))
-            finish()
+        floatingActionButton.setOnClickListener {
+            switchFragment(aiFragment)
         }
     }
+
+    private fun switchFragment(targetFragment: Fragment) {
+        if (activeFragment == targetFragment) return
+
+        supportFragmentManager.beginTransaction()
+            .hide(activeFragment!!)
+            .show(targetFragment)
+            .commit()
+
+        activeFragment = targetFragment
+    }
 }
+
